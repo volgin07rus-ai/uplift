@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { BRAND, EASE } from '@/config'
-import { useContent } from '@/i18n/lang'
+import { useContent, useOther } from '@/i18n/lang'
 import { LangSwitch } from './LangSwitch'
 import { useRequest } from './request'
 import { Logo } from './Logo'
@@ -39,6 +39,7 @@ const PILL_AT = 0.55
  */
 export function Header() {
   const { NAV, UI } = useContent()
+  const other = useOther()
   const root = useRef<HTMLElement>(null)
   const openRequest = useRequest()
   const [ready, setReady] = useState(false)
@@ -107,7 +108,16 @@ export function Header() {
       <div className="header-pill header-nav pointer-events-auto hidden items-center gap-8 lg:flex xl:gap-10">
         {NAV.map((link, i) => (
           <a
-            key={link.label}
+            /*
+              Ключ по адресу, а не по подписи.
+
+              Подпись меняется вместе с языком, и React считал ссылку
+              новой: выбрасывал старую, вставлял свежую и заново
+              проигрывал появление. Шапка от этого мигала при каждом
+              переключении. Адрес у ссылки один и тот же на любом языке —
+              по нему React и узнаёт, что это тот же самый пункт.
+            */
+            key={link.href}
             href={link.href}
             data-active={i === 0 ? '1' : undefined}
             className="nav-link roll-trigger relative text-xs font-medium uppercase tracking-[0.15em]"
@@ -120,7 +130,12 @@ export function Header() {
                 <RollText>{link.label}</RollText>
               </span>
             ) : (
-              <RollText>{link.label}</RollText>
+              /* Двойник на другом языке держит ширину: без него полоса
+                 ссылок растёт и сжимается при каждом переключении */
+              <span className="lang-stable">
+                <RollText>{link.label}</RollText>
+                <span className="lang-ghost">{other.NAV[i].label}</span>
+              </span>
             )}
           </a>
         ))}
@@ -149,7 +164,10 @@ export function Header() {
           onClick={openRequest}
           className="header-pill roll-trigger hidden items-center gap-2.5 text-xs font-medium uppercase tracking-[0.2em] sm:flex"
         >
-          <RollText>{UI.discuss}</RollText>
+          <span className="lang-stable">
+            <RollText>{UI.discuss}</RollText>
+            <span className="lang-ghost">{other.UI.discuss}</span>
+          </span>
           <span
             className="talk-dot flex h-5 w-5 items-center justify-center rounded-full"
             style={{ backgroundColor: BRAND }}

@@ -32,7 +32,16 @@ export function Footer() {
         <div className="footer-col">
           <span className="footer-col-title">{UI.sections}</span>
           {NAV_FOOTER.map((link) => (
-            <a key={link.label} href={link.href} className="footer-link roll-trigger">
+            <a /*
+              Ключ по адресу, а не по подписи.
+
+              Подпись меняется вместе с языком, и React считал ссылку
+              новой: выбрасывал старую, вставлял свежую и заново
+              проигрывал появление. Шапка от этого мигала при каждом
+              переключении. Адрес у ссылки один и тот же на любом языке —
+              по нему React и узнаёт, что это тот же самый пункт.
+            */
+            key={link.href} href={link.href} className="footer-link roll-trigger">
               <RollText>{link.label}</RollText>
             </a>
           ))}

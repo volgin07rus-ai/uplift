@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { BRAND, CONTACT_EMAIL, INK } from '@/config'
-import { useContent } from '@/i18n/lang'
+import { useContent, useOther } from '@/i18n/lang'
 import { RollText } from './RollText'
 
 /**
@@ -22,6 +22,7 @@ function delays(i: number, total: number): CSSProperties {
 
 export function Menu() {
   const { NAV, UI } = useContent()
+  const other = useOther()
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -59,6 +60,9 @@ export function Menu() {
           <span className="menu-btn-labels">
             <span className="menu-btn-label">{UI.menu}</span>
             <span className="menu-btn-label menu-btn-label--close">{UI.close}</span>
+            {/* Двойники на другом языке: не видны, но держат ширину */}
+            <span className="lang-ghost">{other.UI.menu}</span>
+            <span className="lang-ghost">{other.UI.close}</span>
           </span>
           <span className="menu-btn-dots">
             <i />
@@ -73,7 +77,16 @@ export function Menu() {
         <nav className="menu-panel menu-panel--links" style={delays(0, total)}>
           {NAV.map((link, i) => (
             <a
-              key={link.label}
+              /*
+              Ключ по адресу, а не по подписи.
+
+              Подпись меняется вместе с языком, и React считал ссылку
+              новой: выбрасывал старую, вставлял свежую и заново
+              проигрывал появление. Шапка от этого мигала при каждом
+              переключении. Адрес у ссылки один и тот же на любом языке —
+              по нему React и узнаёт, что это тот же самый пункт.
+            */
+            key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
               className="menu-link roll-trigger"

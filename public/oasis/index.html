@@ -3737,6 +3737,44 @@
 			if (lang === "en") applyLang(lang);
 
 			/*
+			  Ширины шапки закрепляем один раз при запуске.
+
+			  Иначе при переключении «Вечера» превращается в Evenings,
+			  «Обсудить проект» в START A PROJECT, и вся правая группа
+			  съезжает на два десятка точек — кнопка языка уходит из-под
+			  пальца ровно в тот миг, когда по ней нажали.
+
+			  Меряем оба языка подряд и запоминаем больший. Оба замера
+			  синхронные, между ними браузер не рисует, — подмены никто
+			  не видит.
+			*/
+			function lockHeaderWidths() {
+				var els = document.querySelectorAll(".uh-link, .uh-talk, .uh-menu");
+				var mine = [];
+				var theirs = [];
+				Array.prototype.forEach.call(els, function (e) {
+					mine.push(e.getBoundingClientRect().width);
+				});
+
+				applyLang(lang === "ru" ? "en" : "ru");
+				Array.prototype.forEach.call(els, function (e) {
+					theirs.push(e.getBoundingClientRect().width);
+				});
+				applyLang(lang);
+
+				Array.prototype.forEach.call(els, function (e, i) {
+					e.style.minWidth = Math.ceil(Math.max(mine[i], theirs[i])) + "px";
+				});
+			}
+
+			// Шрифты доезжают позже разметки — до них ширины врут
+			if (document.fonts && document.fonts.ready) {
+				document.fonts.ready.then(lockHeaderWidths);
+			} else {
+				lockHeaderWidths();
+			}
+
+			/*
 			  Нажатие меняет язык здесь и сообщает наверх: холодная сторона
 			  живёт в том же окне-родителе и должна остаться в согласии.
 			  Подложка едет сразу, не дожидаясь перебора узлов.
