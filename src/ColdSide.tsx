@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useVideoScrub } from "@/useVideoScrub";
 import { INK, VIDEO_SRC } from "@/config";
-import { useContent } from "@/i18n/lang";
+import { useContent, useLang } from "@/i18n/lang";
 import { useReveal } from "@/motion/useReveal";
 import { useScramble } from "@/motion/useScramble";
 import { useAnimate, useIsMobile } from "@/motion/useAnimate";
@@ -81,7 +81,8 @@ const SNOW_DPR = Math.min(
 );
 
 export function ColdSide() {
-  const { AGENCY, GUARANTEE } = useContent();
+  const { AGENCY, GUARANTEE, UI } = useContent();
+  const { lang } = useLang();
   const s1 = useRef<HTMLElement>(null);
   const s2 = useRef<HTMLElement>(null);
   const h1 = useRef<HTMLHeadingElement>(null);
@@ -315,7 +316,26 @@ export function ColdSide() {
             </Suspense>
           </div>
 
+          {/*
+            key по языку — не украшение, а необходимость.
+
+            Крупные заголовки разбираются на буквы: разбор заменяет
+            содержимое своими пролётами и запоминает исходную разметку.
+            React после этого теряет владение этими узлами и новый текст
+            донести туда уже не может — заголовок так и остаётся на
+            прежнем языке, хотя всё вокруг переведено.
+
+            Ключ заставляет React выбросить поддерево и собрать заново.
+            Разбор при этом начинается с чистого листа. Видеть подмену
+            никто не успевает: она приходится на те доли секунды, когда
+            текст и так убран.
+
+            Ключ висит на слое с текстом, а не на всей стороне: рядом
+            живут видео и банк кадров, и пересобирать их из-за смены
+            языка значило бы качать полтора мегабайта заново.
+          */}
           <div
+            key={lang}
             className="pointer-events-none absolute inset-0 z-20"
             style={{ color: INK }}
           >
@@ -336,9 +356,9 @@ export function ColdSide() {
                 className="max-w-[1200px] font-light uppercase leading-[1.15]"
                 style={{ fontSize: "clamp(2rem,4.4vw,4.5rem)" }}
               >
-                Мы не считаем клики
+                {UI.heroLines[0]}
                 <br />
-                Мы считаем прибыль
+                {UI.heroLines[1]}
               </h1>
 
               <p
@@ -413,15 +433,15 @@ export function ColdSide() {
         оставалась ровная горизонтальная черта. Полоса пустая, текста
         над ней нет — поэтому растянуть её можно сколько нужно.
       */}
-      <Cases />
+      <Cases key={`cases-${lang}`} />
       <div className="seam seam--paper" data-surface="light" aria-hidden />
-      <Process />
+      <Process key={`process-${lang}`} />
       <div className="seam seam--dusk" data-surface="light" aria-hidden>
         {/* Нижняя половина полосы уже тёмная — шапке нужно знать, где */}
         <span className="seam-dark" data-surface="dark" />
       </div>
-      <Bridge />
-      <Contact />
+      <Bridge key={`bridge-${lang}`} />
+      <Contact key={`contact-${lang}`} />
       <Footer />
     </RequestModal>
   );

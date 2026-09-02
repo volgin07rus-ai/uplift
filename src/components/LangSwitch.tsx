@@ -1,41 +1,50 @@
+import { useEffect, useState } from 'react'
 import { useLang } from '@/i18n/lang'
 import type { Lang } from '@/i18n/dict'
-
-const OPTIONS: { code: Lang; label: string; title: string }[] = [
-  { code: 'ru', label: 'RU', title: 'Русский' },
-  { code: 'en', label: 'EN', title: 'English' },
-]
 
 /**
  * Переключатель языка.
  *
- * Две подписи и подложка, которая переезжает под выбранную. Едет
- * именно подложка, а не подсветка каждой половины по очереди: глаз
- * читает переезд как одно движение, а два вспыхивания — как мигание.
+ * ── Одна кнопка, а не две ──────────────────────────────────────────
  *
- * Подписи оставлены латиницей в обоих языках. «Рус/Англ» рядом с
- * «RU/EN» выглядит переводом ради перевода, а RU и EN узнают все.
+ * Языка всего два, и выбор здесь — это переключение, а не выбор из
+ * списка. Целиться в половинку шириной в сорок точек незачем: нажатие
+ * куда угодно по кнопке меняет язык на другой.
+ *
+ * ── Почему подложка едет отдельно от текста ────────────────────────
+ *
+ * Текст меняется не сразу: он сперва уходит, и только потом за
+ * закрытыми глазами подменяется. Если подложку двигать вместе с ним,
+ * между нажатием и движением повисает пятая доля секунды — кнопка
+ * кажется залипшей. Поэтому подложка едет сразу, своим состоянием, а
+ * язык догоняет.
  */
 export function LangSwitch() {
   const { lang, setLang } = useLang()
+  const [shown, setShown] = useState<Lang>(lang)
+
+  // Язык могли поменять и не отсюда — держим подложку в согласии с ним
+  useEffect(() => setShown(lang), [lang])
+
+  const next: Lang = shown === 'ru' ? 'en' : 'ru'
 
   return (
-    <div className="lang-switch" role="group" aria-label={lang === 'ru' ? 'Язык' : 'Language'}>
-      {/* Подложка под выбранным. Её положение задаёт data-lang */}
-      <span className="lang-switch-thumb" data-lang={lang} aria-hidden />
-      {OPTIONS.map((o) => (
-        <button
-          key={o.code}
-          type="button"
-          className="lang-switch-btn"
-          data-active={lang === o.code ? '1' : undefined}
-          aria-pressed={lang === o.code}
-          title={o.title}
-          onClick={() => setLang(o.code)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className="lang-switch"
+      onClick={() => {
+        setShown(next)
+        setLang(next)
+      }}
+      aria-label={next === 'en' ? 'Switch to English' : 'Переключить на русский'}
+    >
+      <span className="lang-switch-thumb" data-lang={shown} aria-hidden />
+      <span className="lang-switch-label" data-active={shown === 'ru' ? '1' : undefined}>
+        RU
+      </span>
+      <span className="lang-switch-label" data-active={shown === 'en' ? '1' : undefined}>
+        EN
+      </span>
+    </button>
   )
 }

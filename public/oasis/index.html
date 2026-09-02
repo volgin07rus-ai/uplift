@@ -1286,6 +1286,58 @@
 		/* ---------------------------------------------------------
 		   Кнопка меню
 		   --------------------------------------------------------- */
+		/*
+		  Переключатель языка. Та же кнопка, что и на холодной стороне,
+		  только в тёплых цветах: пропорции и повадка должны совпадать,
+		  иначе на переходе он читается как другой элемент.
+		*/
+		.uh-lang {
+			position: relative;
+			display: inline-flex;
+			align-items: center;
+			height: 38px;
+			padding: 4px;
+			border: 0;
+			border-radius: 999px;
+			background: rgba(20, 32, 14, 0.72);
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.uh-lang-thumb {
+			position: absolute;
+			top: 4px;
+			bottom: 4px;
+			left: 4px;
+			width: calc(50% - 4px);
+			border-radius: 999px;
+			background: #cbe75f;
+			transition: transform 0.5s cubic-bezier(0.35, 0, 0, 1);
+		}
+
+		.uh-lang-thumb[data-lang="en"] {
+			transform: translateX(100%);
+		}
+
+		.uh-lang-label {
+			position: relative;
+			z-index: 1;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 38px;
+			font-family: inherit;
+			font-size: 11px;
+			font-weight: 500;
+			letter-spacing: 2px;
+			color: rgba(226, 238, 205, 0.84);
+			transition: color 0.4s cubic-bezier(0.4, 0, 0.1, 1);
+		}
+
+		.uh-lang-label[data-active] {
+			color: #16220c;
+		}
+
 		.uh-menu {
 			height: 38px;
 			padding: 0 20px;
@@ -1622,6 +1674,12 @@
 					<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#16220c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
 				</span>
 			</a>
+
+			<button class="uh-lang" id="langSwitch" type="button" aria-label="Switch language">
+				<span class="uh-lang-thumb" data-lang="ru" aria-hidden="true"></span>
+				<span class="uh-lang-label" data-active="1">RU</span>
+				<span class="uh-lang-label">EN</span>
+			</button>
 
 			<button class="uh-menu" id="navHamburger" type="button" aria-label="Меню">
 				<span class="uh-menu-inner">
@@ -3678,10 +3736,44 @@
 			}
 			if (lang === "en") applyLang(lang);
 
+			/*
+			  Нажатие меняет язык здесь и сообщает наверх: холодная сторона
+			  живёт в том же окне-родителе и должна остаться в согласии.
+			  Подложка едет сразу, не дожидаясь перебора узлов.
+			*/
+			var langBtn = document.getElementById("langSwitch");
+			function paintSwitch(l) {
+				if (!langBtn) return;
+				langBtn.querySelector(".uh-lang-thumb").setAttribute("data-lang", l);
+				var labels = langBtn.querySelectorAll(".uh-lang-label");
+				labels[0].toggleAttribute("data-active", l === "ru");
+				labels[1].toggleAttribute("data-active", l === "en");
+			}
+			paintSwitch(lang);
+
+			if (langBtn) {
+				langBtn.addEventListener("click", function () {
+					lang = lang === "ru" ? "en" : "ru";
+					paintSwitch(lang);
+					applyLang(lang);
+					try { localStorage.setItem("uplift:lang", lang); } catch (e) {}
+					if (window.parent !== window) {
+						window.parent.postMessage(
+							{ type: "uplift:lang", lang: lang },
+							window.location.origin
+						);
+					}
+				});
+			}
+
 			window.addEventListener("message", function (e) {
 				if (e.origin !== window.location.origin) return;
 				var d = e.data;
-				if (d && d.type === "uplift:lang") applyLang(d.lang === "en" ? "en" : "ru");
+				if (d && d.type === "uplift:lang") {
+					lang = d.lang === "en" ? "en" : "ru";
+					paintSwitch(lang);
+					applyLang(lang);
+				}
 			});
 		})();
 

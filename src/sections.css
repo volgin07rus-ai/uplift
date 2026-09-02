@@ -1283,15 +1283,20 @@ button.footer-link {
    Переключатель языка
    ================================================================ */
 
+/* Кнопка целиком: языка два, и это переключение, а не выбор из списка */
 .lang-switch {
   position: relative;
   display: inline-flex;
   align-items: center;
   height: 2.4rem;
   padding: 0.25rem;
+  border: 0;
   border-radius: 6.25em;
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 0 12px 34px -22px rgba(8, 16, 26, 0.7);
+  cursor: pointer;
+  /* Быстрые повторные нажатия не должны выделять подписи */
+  user-select: none;
 }
 
 /*
@@ -1313,24 +1318,24 @@ button.footer-link {
   transform: translateX(100%);
 }
 
-.lang-switch-btn {
+.lang-switch-label {
   position: relative;
   /* Над подложкой, иначе она закрасит подпись */
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 2.5rem;
   padding: 0 0.5rem;
-  border: 0;
-  background: none;
   color: var(--ink);
   font: inherit;
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.12em;
-  cursor: pointer;
   transition: color 0.4s var(--ease-ui);
 }
 
-.lang-switch-btn[data-active] {
+.lang-switch-label[data-active] {
   color: #fff;
 }
 
@@ -1343,11 +1348,11 @@ button.footer-link {
   background: #eef2ea;
 }
 
-.site-header[data-theme='dark'] .lang-switch-btn {
+.site-header[data-theme='dark'] .lang-switch-label {
   color: #eef2ea;
 }
 
-.site-header[data-theme='dark'] .lang-switch-btn[data-active] {
+.site-header[data-theme='dark'] .lang-switch-label[data-active] {
   color: #0c1a28;
 }
 
@@ -1396,7 +1401,7 @@ button.footer-link {
   transition: transform 0.5s var(--ease);
 }
 
-:root[data-lang-swap] .lang-switch-btn {
+:root[data-lang-swap] .lang-switch-label {
   transition: color 0.4s var(--ease-ui);
 }
 

@@ -6,7 +6,7 @@ import { useInView } from '@/motion/useInView'
 import { useReveal } from '@/motion/useReveal'
 
 export function Process() {
-  const { FACTS, PROCESS } = useContent()
+  const { FACTS, PROCESS, UI } = useContent()
   const section = useRef<HTMLElement>(null)
   const title = useRef<HTMLHeadingElement>(null)
   const active = useInView(section)
@@ -27,7 +27,7 @@ export function Process() {
     <section ref={section} id="process" className="section section--process" data-surface="light">
       <div className="section-head">
         <h2 ref={title} className="section-title">
-          Как работаем
+          {UI.processTitle}
         </h2>
       </div>
 

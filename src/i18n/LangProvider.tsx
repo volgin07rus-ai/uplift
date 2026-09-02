@@ -80,6 +80,23 @@ export function LangProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  /*
+    Переключить язык можно и с тёплой стороны — она в кадре, и своя
+    кнопка у неё там же, в шапке. Оттуда приходит сообщение, и здесь мы
+    просто соглашаемся: сторона в этот момент спрятана, разыгрывать над
+    ней подмену текста некому и незачем.
+  */
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return
+      const d = e.data as { type?: string; lang?: string } | null
+      if (d?.type !== 'uplift:lang') return
+      setLangState(d.lang === 'en' ? 'en' : 'ru')
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
   useEffect(() => {
     const running = timers.current
     return () => running.forEach(clearTimeout)

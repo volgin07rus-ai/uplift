@@ -168,7 +168,7 @@ export function Cases() {
     <section ref={section} id="cases" className="section section--cases" data-surface="light">
       <div className="section-head">
         <h2 ref={title} className="section-title">
-          Кейсы
+          {UI.casesTitle}
         </h2>
         <p ref={note} className="section-note">
           {CASES_NOTE}
