@@ -28,8 +28,21 @@ export function splitText(el: HTMLElement, mode: 'words' | 'chars'): Split {
 
   el.textContent = ''
 
+  /*
+    Источник — innerHTML, и в нём живут сущности: браузер сериализует
+    неразрывный пробел обратно в «&nbsp;», кавычки в «&quot;» и так
+    далее. Срезать теги регуляркой мало — сущность уедет в вёрстку
+    шестью буквами вместо одной. Отдаём разбор самому браузеру: он и
+    теги уберёт, и сущности раскроет.
+  */
+  const plain = document.createElement('div')
+  const toText = (html: string) => {
+    plain.innerHTML = html
+    return plain.textContent ?? ''
+  }
+
   for (const lineText of source.split(/<br\s*\/?>/i)) {
-    const text = lineText.replace(/<[^>]+>/g, '').trim()
+    const text = toText(lineText).trim()
     if (!text) continue
 
     const line = document.createElement('span')
