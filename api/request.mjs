@@ -18,7 +18,7 @@ import nodemailer from 'nodemailer'
  *   SMTP_HOST     сервер отправки: smtp.yandex.ru, smtp.gmail.com, …
  *   SMTP_USER     ваш ящик, с него уходит письмо
  *   SMTP_PASS     пароль приложения (не пароль от почты!)
- *   NOTIFY_EMAIL  куда слать заявки — обязательна
+ *   NOTIFY_EMAIL  куда слать заявки — обязательна, можно через запятую
  *   SITE_URL      адрес сайта, идёт первой строкой письма
  *   AUTHOR        ФИО, идёт второй строкой
  *   ALLOW_ORIGIN  откуда принимаем заявки, через запятую
@@ -30,7 +30,16 @@ import nodemailer from 'nodemailer'
   он к тому же чужой. Если переменная не задана — лучше честная ошибка,
   чем письма, молча уходящие не туда.
 */
-const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL
+/*
+  Получателей может быть несколько — перечисляются через запятую.
+  Нужно это вот зачем: основной адрес, куда идут заявки, бывает чужим,
+  и владелец сайта не может проверить, дошло ли письмо. Копия себе
+  снимает этот вопрос.
+*/
+const NOTIFY_TO = (process.env.NOTIFY_EMAIL || '')
+  .split(',')
+  .map((address) => address.trim())
+  .filter(Boolean)
 const SITE_URL = process.env.SITE_URL || 'сайт не указан'
 const AUTHOR = process.env.AUTHOR || 'автор не указан'
 
@@ -112,7 +121,7 @@ export default async function handler(req, res) {
 
   const user = process.env.SMTP_USER
   const pass = process.env.SMTP_PASS
-  if (!user || !pass || !NOTIFY_EMAIL) {
+  if (!user || !pass || !NOTIFY_TO.length) {
     console.error('Не заданы SMTP_USER, SMTP_PASS или NOTIFY_EMAIL')
     return res.status(500).json({ error: 'Отправка не настроена' })
   }
@@ -135,7 +144,7 @@ export default async function handler(req, res) {
 
     await mail.sendMail({
       from: `Сайт UPLIFT <${user}>`,
-      to: NOTIFY_EMAIL,
+      to: NOTIFY_TO,
       subject: `Новая заявка с сайта ${SITE_URL}`,
       // Отвечать удобнее сразу человеку, а не себе
       replyTo: fields.contact.includes('@') ? fields.contact : undefined,
