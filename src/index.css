@@ -668,25 +668,11 @@ body {
 
 /* ================================================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  [data-stagger] {
-    transition-duration: 0.01ms;
-    opacity: 1;
-    transform: none;
-  }
-  .roll-col,
-  .scrollbar,
-  .menu-panel,
-  .menu-btn-label,
-  .menu-btn-dots,
-  .nav-link::after,
-  .arrow-btn::before {
-    transition-duration: 0.01ms !important;
-  }
-}
+/*
+  Здесь стояли правила @media (prefers-reduced-motion: reduce),
+  гасившие переходы. Сняты по решению владельца сайта — почему и как
+  вернуть, написано в src/motion/useReducedMotion.ts.
+*/
 
 /* ================================================================
    Блоки в обычном потоке
@@ -1162,20 +1148,3 @@ body {
   color: #1d304599;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .case-card,
-  .step,
-  .fact,
-  .section-note {
-    opacity: 1 !important;
-    transform: none !important;
-    transition-duration: 0.01ms !important;
-  }
-  .case-panel,
-  .case-arrow,
-  .shift-word > span,
-  .pill,
-  .pill-arrow {
-    transition-duration: 0.01ms !important;
-  }
-}

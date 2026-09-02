@@ -898,24 +898,11 @@
   font-size: 0.75rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bridge-pair,
-  .bridge-cta {
-    opacity: 1 !important;
-    transform: none !important;
-    transition-duration: 0.01ms !important;
-  }
-  .bridge-pair-link i {
-    transform: scaleX(1) !important;
-    transition-duration: 0.01ms !important;
-  }
-  .bridge-cta::before,
-  .contact-submit::before,
-  .field-line,
-  .field-box > label {
-    transition-duration: 0.01ms !important;
-  }
-}
+/*
+  Здесь стояли правила @media (prefers-reduced-motion: reduce),
+  гасившие переходы. Сняты по решению владельца сайта — почему и как
+  вернуть, написано в src/motion/useReducedMotion.ts.
+*/
 
 /* ================================================================
    Окно с формой
@@ -1011,13 +998,6 @@
 /* Заголовок окна короткий — крестик не должен налезать на него */
 .modal-panel .section-label {
   padding-right: 3rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .modal,
-  .modal-panel {
-    animation-duration: 0.01ms;
-  }
 }
 
 /* ================================================================
@@ -1168,14 +1148,6 @@ button.footer-link {
 
 .loader-percent {
   font-variant-numeric: tabular-nums;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loader,
-  .loader-inner,
-  .loader-bar-fill {
-    transition-duration: 0.01ms !important;
-  }
 }
 
 /* ================================================================

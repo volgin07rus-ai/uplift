@@ -251,9 +251,9 @@ export class StormCurtain {
     this.direction = direction
     this.dir = direction === 'toWarm' ? 1 : -1
     this.hooks = hooks
-    this.reduced =
-      typeof matchMedia === 'function' &&
-      matchMedia('(prefers-reduced-motion: reduce)').matches
+    // Настройка «уменьшить движение» не соблюдается по решению
+    // владельца сайта — см. src/motion/useReducedMotion.ts
+    this.reduced = false
 
     this.resize()
     this.seed()

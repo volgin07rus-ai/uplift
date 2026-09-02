@@ -45,11 +45,14 @@ export interface VideoScrubResult {
   loading: LoadState
 }
 
+/*
+  Настройка «уменьшить движение» здесь не соблюдается — решение
+  владельца сайта, см. src/motion/useReducedMotion.ts. Оставлено
+  функцией, а не выброшено: вернуть уважение к настройке — это
+  вернуть сюда прежнюю проверку и поставить там true.
+*/
 function prefersReducedMotion() {
-  return (
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
+  return false
 }
 
 /** Достаёт avcC / hvcC / vpcC / av1C и отдаёт его как описание для VideoDecoder. */
