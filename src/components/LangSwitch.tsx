@@ -38,7 +38,18 @@ export function LangSwitch() {
       }}
       aria-label={next === 'en' ? 'Switch to English' : 'Переключить на русский'}
     >
-      <span className="lang-switch-thumb" data-lang={shown} aria-hidden />
+      {/*
+        Оба конца переезда заданы явным значением, а не «есть правило /
+        нет правила». Переход из transform: none в translateX местами
+        залипал: подложка оставалась там, где была, хотя класс уже
+        сменился. С двумя явными значениями браузеру нечего доопределять.
+      */}
+      <span
+        className="lang-switch-thumb"
+        data-lang={shown}
+        style={{ transform: shown === 'en' ? 'translateX(100%)' : 'translateX(0%)' }}
+        aria-hidden
+      />
       <span className="lang-switch-label" data-active={shown === 'ru' ? '1' : undefined}>
         RU
       </span>

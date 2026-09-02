@@ -2,9 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { DICT, type Lang } from './dict'
 import { LANG_KEY, LangCtx, initialLang } from './lang'
 
-/** Сколько текст уходит и сколько возвращается, мс. */
-const OUT = 220
-const IN = 420
+/*
+  Сколько текст уходит и сколько возвращается, мс.
+
+  Должно совпадать с длительностями в sections.css: там уход 0.28 с,
+  возвращение 0.72 с. Уход короче — исчезает быстро, проявляется
+  медленно, иначе подмена выглядит суетливой.
+*/
+const OUT = 280
+const IN = 720
 
 /**
  * Язык на весь сайт.
