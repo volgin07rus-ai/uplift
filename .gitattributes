@@ -1,0 +1,9 @@
+# Единый перевод строки в репозитории. Без этого Windows кладёт CRLF,
+# сборщик на Linux видит другой файл, и diff забивается мусором.
+* text=auto eol=lf
+
+# Двоичное не трогать
+*.mp4 binary
+*.webp binary
+*.png binary
+*.jpg binary

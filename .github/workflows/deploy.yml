@@ -1,0 +1,58 @@
+# Сборка и публикация на GitHub Pages.
+#
+# Собранная папка dist в репозиторий не кладётся — её собирает эта
+# задача при каждом пуске в main. Так в истории остаётся только
+# исходный код, а на Pages уезжает свежая сборка.
+name: Публикация
+
+on:
+  push:
+    branches: [main]
+  # Кнопка «запустить вручную» на вкладке Actions
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Публикация одна за раз: параллельные выкладки затирали бы друг друга
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # Тёплая сторона живёт по адресу /warm, но такого файла нет:
+      # адрес рисует история браузера. При прямом заходе или обновлении
+      # страницы Pages отдал бы свою 404. Кладём копию входного файла
+      # под этим именем — тогда приложение поднимется и само разберётся,
+      # какую сторону показывать.
+      - run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

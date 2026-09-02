@@ -1,0 +1,1181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Две кривые на весь сайт — как у Lusion. Первая на появления,
+  вторая на интерфейс и наведения. Те же значения дублируются
+  в JS (motion/math.ts), поэтому движение везде читается одинаково.
+*/
+:root {
+  --ease: cubic-bezier(0.35, 0, 0, 1);
+  --ease-ui: cubic-bezier(0.4, 0, 0.1, 1);
+  --ink: #1d3045;
+  /* Фон страницы. В него же растворяется блок с горами на выходе,
+     поэтому значение должно жить в одном месте. */
+  --surface: #eff1f6;
+  --brand: #104fff;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Системную полосу прячем — вместо неё свой бар в ScrollProgress.
+     На Windows она толстая и заметно портит кадр. */
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  overflow-x: hidden;
+  background: var(--surface);
+  font-family: 'Helvetica Neue ME', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* ================================================================
+   Разобранный текст
+   ================================================================ */
+
+/*
+  Строка работает маской: буквы выезжают снизу и должны быть не видны
+  до того, как попадут на место. Отступы дают запас под выносные
+  элементы (Д, Ц, Щ) и под наклон, отрицательные поля их гасят,
+  чтобы текст не сдвинулся ни на пиксель.
+*/
+.split-line {
+  display: block;
+  overflow: hidden;
+  padding: 0.1em 0.16em 0.16em;
+  margin: -0.1em -0.16em -0.16em;
+}
+
+/* Тоже без will-change: у крупного заголовка это сотня слоёв разом */
+.split-word,
+.split-char {
+  display: inline-block;
+}
+
+.split-word {
+  white-space: pre;
+}
+
+/* ================================================================
+   Второй экран: порог и гарантия
+   ================================================================ */
+
+.guarantee {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /*
+    Ширину задаём явно. Сама секция — центрирующий флекс, и без этого
+    блок сжимается по самому широкому ребёнку; тогда растягивать
+    внутренние элементы некуда, и маске строки не хватает боковых
+    отступов под наклон букв.
+  */
+  width: 100%;
+  max-width: 60rem;
+}
+
+.guarantee-label {
+  min-height: 1.2em;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #1d3045bd;
+}
+
+/* Сумма — главное на экране, всё остальное к ней прижимается */
+.guarantee-amount {
+  /*
+    Тянемся на всю ширину, а не по содержимому. У маски строки есть
+    боковые отступы с отрицательными полями под наклон букв; в
+    колонке с выравниванием по центру элемент сжимается по контенту,
+    и этих отступов ему не хватает — строка «вылезает», страховка
+    откатывает разбор, и анимация молча пропадает.
+  */
+  align-self: stretch;
+  margin-top: 0.8rem;
+  font-size: clamp(3rem, 9vw, 8rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.guarantee-period {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #1d3045c4;
+}
+
+/* Черта разъезжается от середины — отделяет порог от обещания */
+.guarantee-rule {
+  width: min(22rem, 60vw);
+  height: 1px;
+  margin: clamp(1.75rem, 4vh, 2.75rem) 0;
+  background: #1d30455e;
+  transform-origin: center;
+}
+
+[data-show='0'] .guarantee-rule {
+  transform: scaleX(0);
+}
+
+[data-show='1'] .guarantee-rule {
+  transform: scaleX(1);
+}
+
+.guarantee-promise {
+  align-self: stretch;
+  max-width: 32rem;
+  margin: 0 auto;
+  font-size: clamp(1.05rem, 1.9vw, 1.6rem);
+  font-weight: 300;
+  line-height: 1.45;
+  color: #1d3045d6;
+}
+
+/* ================================================================
+   Прокрутка букв при наведении
+   ================================================================ */
+
+.roll {
+  display: inline-flex;
+  /* без этого колонка растянется по высоте маски, и сдвиг на -50%
+     окажется вдвое короче строки — буква доедет только до половины */
+  align-items: flex-start;
+  overflow: hidden;
+  height: 1.25em;
+  line-height: 1.25em;
+  vertical-align: bottom;
+}
+
+/*
+  will-change здесь НЕ ставится. Подсказка «готовь отдельный слой»
+  честно исполняется: браузер поднимает элемент в свой слой сразу и
+  держит его всё время. Букв на странице больше двухсот — это две
+  сотни слоёв, которые видеокарта пересобирает каждый кадр, ничего
+  при этом не анимируя. Подсказку даём только под курсором, где она
+  и нужна: там букв полтора десятка и живут они полсекунды.
+*/
+.roll-col {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  transition: transform 0.4s var(--ease-ui);
+}
+
+.roll-col > span {
+  display: block;
+  height: 1.25em;
+}
+
+.roll-col[data-space] {
+  width: 0.3em;
+}
+
+/*
+  :hover — только под настоящим курсором. На касании браузер применяет
+  его по тапу и держит, пока не тронешь другое место: буквы застывают
+  перекаченными наполовину. :focus-visible оставляем без условия — это
+  клавиатура, и она работает везде.
+*/
+@media (hover: hover) {
+  .roll-trigger:hover .roll-col {
+    will-change: transform;
+    transform: translateY(-50%);
+  }
+}
+
+.roll-trigger:focus-visible .roll-col {
+  will-change: transform;
+  transform: translateY(-50%);
+}
+
+/* ================================================================
+   Навигация
+   ================================================================ */
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s var(--ease-ui);
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.nav-link[data-active='1']::after {
+  background: var(--brand);
+  transform: scaleX(1);
+}
+
+/* ================================================================
+   Знак
+   ================================================================
+
+   Связка «знак + слово» одна на весь сайт: в шапке, на загрузочном
+   экране и в подвале. Размер знака задан в em, поэтому он сам растёт
+   вместе с кеглем строки, рядом с которой стоит, — от одиннадцати
+   пикселей в шапке до восьми рем в подвале одним правилом.
+*/
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+
+.brand svg {
+  height: 0.62em;
+  width: auto;
+  /* Знак заметно шире буквы, и по оптике садится чуть выше строки */
+  margin-top: -0.06em;
+  flex: none;
+}
+
+/* ================================================================
+   Шапка
+   ================================================================
+
+   Сайт уходит из светлого в почти чёрный, и одним цветом букв тут не
+   обойтись: снизу тёмные надписи сливались с фоном начисто. Цвет
+   переключается по data-surface соседних секций, а под ссылками
+   проявляется плашка — потому что под шапкой проезжает ещё и белый
+   заголовок моста, и на нём светлые буквы точно так же пропадут.
+*/
+
+.site-header {
+  color: var(--ink);
+  transition: color 0.5s var(--ease-ui);
+}
+
+.site-header[data-theme='dark'] {
+  color: #eef2ea;
+}
+
+.header-pill {
+  height: 2.4rem;
+  padding: 0 1.15rem;
+  border-radius: 6.25em;
+  background: transparent;
+  transition:
+    background-color 0.45s var(--ease-ui),
+    box-shadow 0.45s var(--ease-ui);
+}
+
+/* Отрицательное поле возвращает ссылки на прежнее место: плашка
+   растёт вокруг них, а не отодвигает их от края */
+.header-nav {
+  margin-left: -1.15rem;
+}
+
+/*
+  Без размытия подложки. Оно тут выглядело чуть лучше, но каждая такая
+  поверхность пересчитывается на каждом кадре прокрутки, а закреплённых
+  плашек стало три. Плотности хватает и без него.
+*/
+.site-header[data-scrolled] .header-pill {
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 34px -22px rgba(8, 16, 26, 0.7);
+}
+
+.site-header[data-scrolled][data-theme='dark'] .header-pill {
+  background: rgba(9, 14, 12, 0.74);
+  box-shadow: 0 12px 34px -22px rgba(0, 0, 0, 0.8);
+}
+
+.site-header[data-theme='dark'] .menu-btn {
+  color: #eef2ea;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.site-header[data-theme='dark'] .menu-btn:hover,
+.site-header[data-theme='dark'] .menu-btn[data-open] {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Фирменный синий на тёмном тонет — берём осветлённый */
+.site-header[data-theme='dark'] .nav-link[data-active='1']::after {
+  background: #8fb0ff;
+}
+
+/* Тёмная половина полосы-перехода: метка для шапки, не для глаза */
+.seam-dark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46%;
+  bottom: 0;
+}
+
+/* Круглая кнопка со стрелкой: заливка растёт снизу — приём Lusion */
+.arrow-btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    color 0.4s var(--ease-ui),
+    border-color 0.4s var(--ease-ui),
+    transform 0.25s var(--ease-ui);
+}
+
+.arrow-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--brand);
+  transform: scale3d(1, 0, 1);
+  transform-origin: bottom;
+  transition: transform 0.4s var(--ease-ui);
+}
+
+.arrow-btn > svg {
+  position: relative;
+}
+
+.arrow-btn:hover {
+  color: #fff;
+  border-color: transparent !important;
+}
+
+.arrow-btn:hover::before {
+  transform: scale3d(1, 1, 1);
+}
+
+.arrow-btn:active {
+  transform: scale(0.94);
+}
+
+/* ================================================================
+   Кнопка меню
+   ================================================================ */
+
+.menu-btn {
+  height: 3.2em;
+  padding: 0 1.4em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 6.25em;
+  color: var(--ink);
+  /* Без размытия подложки: кнопка висит над кадром с горами,
+     который перерисовывается на каждой прокрутке */
+  background: rgba(255, 255, 255, 0.86);
+  transition:
+    background-color 0.4s var(--ease-ui),
+    color 0.4s var(--ease-ui);
+}
+
+.menu-btn:hover,
+.menu-btn[data-open] {
+  background: #fff;
+}
+
+.menu-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+}
+
+/*
+  Сеткой, а не потоком с абсолютом: тогда коробка берёт ширину по
+  самому длинному слову. Иначе ширину задавало «Меню», и «Закрыть»
+  обрезалось краем маски.
+*/
+.menu-btn-labels {
+  display: grid;
+  overflow: hidden;
+  height: 1.2em;
+  line-height: 1.2em;
+  text-align: left;
+}
+
+.menu-btn-label {
+  grid-area: 1 / 1;
+  height: 1.2em;
+  white-space: nowrap;
+  transition: transform 0.3s var(--ease-ui);
+}
+
+.menu-btn-label--close {
+  transform: translate3d(0, 100%, 0);
+}
+
+.menu-btn[data-open] .menu-btn-label {
+  transform: translate3d(0, -100%, 0);
+}
+
+.menu-btn[data-open] .menu-btn-label--close {
+  transform: translateZ(0);
+}
+
+/* Две точки доворачиваются со 180° на 270° */
+.menu-btn-dots {
+  position: relative;
+  display: block;
+  width: 1.15em;
+  height: 1.15em;
+  transform: rotate(180deg);
+  transition: transform 0.4s var(--ease-ui);
+}
+
+.menu-btn-dots i {
+  position: absolute;
+  top: 50%;
+  width: 0.3125em;
+  height: 0.3125em;
+  border-radius: 100%;
+  background: currentColor;
+  transform: translateY(-50%);
+}
+
+.menu-btn-dots i:first-child {
+  left: 0.1em;
+}
+
+.menu-btn-dots i:last-child {
+  right: 0.1em;
+}
+
+.menu-btn:hover .menu-btn-dots,
+.menu-btn[data-open] .menu-btn-dots {
+  transform: rotate(270deg);
+}
+
+/* ================================================================
+   Панели меню
+   ================================================================
+
+   Открываются сверху вниз, закрываются снизу вверх: задержка
+   открытия лежит в правиле [data-open], задержка закрытия — в
+   базовом. Значения приходят из JS переменными --open/--close-delay.
+*/
+
+.menu-panels {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: min(20rem, calc(100vw - 3rem));
+  font-size: 1rem;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.menu-panel {
+  background: #fff;
+  border-radius: 0.75rem;
+  opacity: 0;
+  will-change: transform;
+  transition:
+    transform 0.5s var(--close-delay) var(--ease-ui),
+    opacity 0.5s var(--close-delay) var(--ease-ui);
+}
+
+/* Первая панель наклонена в одну сторону, остальные — в другую */
+.menu-panel--links {
+  transform: translate3d(0, 5.5em, 0) rotate(3.5deg);
+  padding: 0.9rem 0.4rem;
+}
+
+.menu-panel--contact,
+.menu-panel--accent {
+  transform: translate3d(0, 7.75em, 0) rotate(-3.5deg);
+}
+
+.menu-panels[data-open] .menu-panel {
+  transform: translateZ(0);
+  opacity: 1;
+  transition:
+    transform 0.5s var(--open-delay) var(--ease-ui),
+    opacity 0.5s var(--open-delay) var(--ease-ui);
+}
+
+.menu-panels[data-open] {
+  pointer-events: auto;
+}
+
+/* Разделы */
+.menu-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 1.1rem;
+  font-size: 1.35rem;
+  text-transform: uppercase;
+  color: #1d304599;
+  transition: color 0.3s var(--ease-ui);
+}
+
+.menu-link:hover,
+.menu-link[data-active='1'] {
+  color: var(--ink);
+}
+
+.menu-link-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 100%;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 0.3s var(--ease-ui),
+    transform 0.3s var(--ease-ui);
+}
+
+.menu-link[data-active='1'] .menu-link-dot,
+.menu-link:hover .menu-link-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Контакт */
+.menu-panel--contact {
+  padding: 1.5rem;
+}
+
+.menu-contact-title {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 300;
+}
+
+.menu-contact-mail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.6rem;
+  background: #f0f1fa;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  transition: background-color 0.3s var(--ease-ui);
+}
+
+.menu-contact-mail:hover {
+  background: #e6e8f5;
+}
+
+.menu-contact-arrow {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 100%;
+  transition: transform 0.3s var(--ease-ui);
+}
+
+.menu-contact-mail:hover .menu-contact-arrow {
+  transform: translateX(0.15rem);
+}
+
+/* Акцентная карточка */
+.menu-panel--accent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.35rem 1.5rem;
+  color: #fff;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.menu-panel--accent svg {
+  transition: transform 0.3s var(--ease-ui);
+}
+
+.menu-panel--accent:hover svg {
+  transform: translate(0.15rem, -0.15rem);
+}
+
+/* ================================================================
+   Своя полоса прокрутки
+   ================================================================ */
+
+.scrollbar {
+  position: fixed;
+  top: 6rem;
+  bottom: 2rem;
+  right: 0.75rem;
+  z-index: 90;
+  width: 6px;
+  border-radius: 999px;
+  background: #1d30451a;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-ui);
+  cursor: pointer;
+  /* Чтобы на телефоне протяжка бара не листала страницу заодно */
+  touch-action: none;
+}
+
+.scrollbar[data-visible='1'],
+.scrollbar:hover {
+  opacity: 1;
+}
+
+.scrollbar-thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  will-change: transform;
+}
+
+/* ================================================================
+   Прочие выезды блока (кнопки, точки) — остаются на CSS
+   ================================================================ */
+
+[data-stagger] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.8s var(--ease),
+    transform 0.8s var(--ease);
+}
+
+[data-show='1'] [data-stagger] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  [data-stagger] {
+    transition-duration: 0.01ms;
+    opacity: 1;
+    transform: none;
+  }
+  .roll-col,
+  .scrollbar,
+  .menu-panel,
+  .menu-btn-label,
+  .menu-btn-dots,
+  .nav-link::after,
+  .arrow-btn::before {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================================================================
+   Блоки в обычном потоке
+   ================================================================ */
+
+.section {
+  position: relative;
+  padding: clamp(6rem, 12vh, 11rem) clamp(1.5rem, 5vw, 5rem);
+}
+
+.section--cases {
+  background: var(--surface);
+}
+
+.section--process {
+  background: #fff;
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 0 auto clamp(3rem, 6vw, 5.5rem);
+  max-width: 1400px;
+}
+
+@media (min-width: 900px) {
+  .section-head {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 3rem;
+  }
+}
+
+.section-title {
+  color: var(--ink);
+  font-weight: 300;
+  text-transform: uppercase;
+  line-height: 1.05;
+  font-size: clamp(2.25rem, 5.4vw, 5.5rem);
+}
+
+.section-note {
+  /* Пока строка проявляется, её ещё нет — без запаса заголовок прыгает */
+  min-height: 3.4em;
+  max-width: 26rem;
+  opacity: 0;
+  transform: translate3d(0, 1.25rem, 0);
+  transition:
+    opacity 0.8s var(--ease) 120ms,
+    transform 0.8s var(--ease) 120ms;
+  color: #1d304599;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+
+/* ---------------------------- Кейсы ---------------------------- */
+
+[data-inview='1'] .section-note {
+  opacity: 1;
+  transform: translateZ(0);
+}
+
+.case-grid {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.75rem);
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+@media (min-width: 900px) {
+  .case-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .case-card--wide {
+    grid-column: span 2;
+  }
+}
+
+/*
+  Выезд карточек. Чётные приходят слева, нечётные справа, каждая
+  подкручена в свою сторону — направление и угол приходят из JS
+  переменными --dx и --rot.
+*/
+.case-card {
+  display: block;
+  opacity: 0;
+  transform: translate3d(var(--dx, 0), 3rem, 0) rotate(var(--rot, 0deg));
+  transition:
+    opacity 0.9s var(--ease),
+    transform 0.9s var(--ease);
+  will-change: transform;
+}
+
+[data-inview='1'] .case-card {
+  opacity: 1;
+  transform: translateZ(0);
+}
+
+.case-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: clamp(15rem, 21vw, 20rem);
+  padding: clamp(1.5rem, 2.5vw, 2.5rem);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--ink);
+  color: #fff;
+  /*
+    Тень под текстом наследуется всей карточкой. Ширму можно было бы
+    сделать плотнее, но тогда снимок под ней гаснет — а светлое пятно
+    вроде лампы или окна встречается ровно там, где стоит цифра.
+  */
+  text-shadow: 0 1px 16px rgba(6, 14, 24, 0.5);
+  transition:
+    transform 0.6s var(--ease),
+    box-shadow 0.6s var(--ease);
+}
+
+/* ---------------------- Снимок под карточкой ----------------------
+
+   Фотография задаёт нишу, но спорить с цифрами ей нельзя. Поэтому
+   она приглушена по цвету и закрыта ширмой: сверху та почти
+   прозрачна, к низу — почти сплошная, потому что внизу карточки и
+   стоит весь текст.
+
+   Слои идут порядком в разметке: снимок, ширма, пятно, содержимое.
+   Содержимое поднято z-index'ом — иначе абсолютные слои легли бы
+   поверх него. */
+
+.case-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Снимки разной температуры — сводим их к одному спокойному тону */
+  filter: saturate(0.7) contrast(1.04);
+  transform: scale(1.04);
+  transition: transform 1s var(--ease);
+}
+
+.case-card:hover .case-photo {
+  transform: scale(1.11);
+}
+
+.case-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(29, 48, 69, 0.56) 0%,
+    rgba(25, 42, 62, 0.74) 42%,
+    rgba(17, 30, 45, 0.9) 74%,
+    rgba(12, 22, 34, 0.96) 100%
+  );
+  transition: opacity 0.7s var(--ease);
+}
+
+/* На наведении чуть отпускаем — снимок проступает */
+.case-card:hover .case-shade {
+  opacity: 0.88;
+}
+
+/* Мягкое пятно, проявляющееся при наведении */
+.case-panel::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle at 70% 20%, rgba(16, 79, 255, 0.5), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.7s var(--ease);
+  pointer-events: none;
+}
+
+.case-card:hover .case-panel {
+  transform: translateY(-8px);
+  box-shadow: 0 26px 60px -24px rgba(29, 48, 69, 0.55);
+}
+
+.case-card:hover .case-panel::after {
+  opacity: 1;
+}
+
+.case-index {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  color: #ffffff59;
+  transition: color 0.5s var(--ease);
+}
+
+.case-card:hover .case-index {
+  color: #fff;
+}
+
+.case-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-top: auto;
+}
+
+.case-hero-value {
+  font-size: clamp(3rem, 6.5vw, 6rem);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.case-hero-unit {
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  color: #ffffff99;
+  transition: color 0.5s var(--ease);
+}
+
+.case-card:hover .case-hero-unit {
+  color: #fff;
+}
+
+.case-hero-label {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.7rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff80;
+}
+
+.case-stats {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2.25rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #ffffff26;
+}
+
+.case-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.case-stat-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffffff66;
+}
+
+.case-stat-value {
+  font-size: 1rem;
+}
+
+.case-foot {
+  margin-top: 1.15rem;
+}
+
+.case-tags {
+  display: block;
+  min-height: 1.2em;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: #1d304599;
+}
+
+.case-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  color: var(--ink);
+}
+
+.case-name {
+  font-size: clamp(1.5rem, 2.6vw, 2.5rem);
+  font-weight: 300;
+  text-transform: uppercase;
+}
+
+.case-arrow {
+  flex: none;
+  transition: transform 0.5s var(--ease);
+}
+
+.case-card:hover .case-arrow {
+  transform: translate(0.35rem, -0.35rem);
+}
+
+/* Название протягивается вбок — у Lusion каждая буква со своей задержкой.
+   Слово держится целиком: без nowrap строка из inline-block букв
+   переносится в любом месте, включая середину слова. */
+.shift-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.shift-word > span {
+  display: inline-block;
+  transition: transform 0.55s var(--ease);
+}
+
+.case-card:hover .shift-word > span {
+  transform: translateX(0.45em);
+}
+
+/* Широкая последняя карточка кладёт цифры в строку */
+@media (min-width: 900px) {
+  .case-card--wide .case-panel {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    min-height: 18rem;
+  }
+  .case-card--wide .case-stats {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    border-left: 1px solid #ffffff26;
+    padding-left: 2.5rem;
+  }
+  .case-card--wide .case-hero-label {
+    margin-bottom: 0.2rem;
+  }
+}
+
+.case-all {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.6rem;
+  border-radius: 6.25em;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: background-color 0.4s var(--ease-ui);
+}
+
+.pill:hover {
+  background: var(--brand);
+}
+
+.pill-arrow {
+  display: flex;
+  transition: transform 0.4s var(--ease-ui);
+}
+
+.pill:hover .pill-arrow {
+  transform: translate(0.2rem, -0.2rem);
+}
+
+/* -------------------------- Как работаем -------------------------- */
+
+.step-grid {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+@media (min-width: 700px) {
+  .step-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .step-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.step {
+  opacity: 0;
+  transform: translate3d(0, 2.5rem, 0);
+  transition:
+    opacity 0.8s var(--ease),
+    transform 0.8s var(--ease);
+  padding-top: 1.5rem;
+  border-top: 1px solid #1d304526;
+}
+
+[data-inview='1'] .step {
+  opacity: 1;
+  transform: translateZ(0);
+}
+
+.step-index {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  color: var(--brand);
+}
+
+.step-title {
+  margin-top: 1.1rem;
+  font-size: clamp(1.15rem, 1.7vw, 1.5rem);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.step-text {
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: #1d304599;
+}
+
+.fact-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin: clamp(4rem, 8vw, 6.5rem) auto 0;
+  max-width: 1400px;
+}
+
+@media (min-width: 900px) {
+  .fact-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.fact {
+  opacity: 0;
+  transform: translate3d(0, 1.5rem, 0);
+  transition:
+    opacity 0.8s var(--ease),
+    transform 0.8s var(--ease);
+}
+
+[data-inview='1'] .fact {
+  opacity: 1;
+  transform: translateZ(0);
+}
+
+.fact-value {
+  display: block;
+  font-size: clamp(2rem, 3.4vw, 3.25rem);
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.fact-label {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #1d304599;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-card,
+  .step,
+  .fact,
+  .section-note {
+    opacity: 1 !important;
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+  .case-panel,
+  .case-arrow,
+  .shift-word > span,
+  .pill,
+  .pill-arrow {
+    transition-duration: 0.01ms !important;
+  }
+}
