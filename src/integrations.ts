@@ -17,7 +17,7 @@
    Сюда — её адрес, что-то вроде
    https://uplift-mail.vercel.app/api/request
 */
-export const REQUEST_ENDPOINT = '*адрес-функции'
+export const REQUEST_ENDPOINT = 'https://scroll-tied-video.vercel.app/api/request'
 
 /*
   Адреса получателя здесь нет намеренно.
