@@ -15,7 +15,8 @@ import nodemailer from 'nodemailer'
  * уходит с вашего адреса, и подтверждать нечего.
  *
  * Что задать в переменных окружения хостинга:
- *   SMTP_USER     ваш ящик на Яндексе, с него уходит письмо
+ *   SMTP_HOST     сервер отправки: smtp.yandex.ru, smtp.gmail.com, …
+ *   SMTP_USER     ваш ящик, с него уходит письмо
  *   SMTP_PASS     пароль приложения (не пароль от почты!)
  *   NOTIFY_EMAIL  куда слать заявки — обязательна
  *   SITE_URL      адрес сайта, идёт первой строкой письма
@@ -117,9 +118,17 @@ export default async function handler(req, res) {
   }
 
   try {
+    /*
+      Сервер отправки берём из окружения. Раньше здесь был жёстко
+      прописан Яндекс, и это привязывало функцию к одному почтовику —
+      а ящик, с которого удобно отправлять, у каждого свой.
+
+      Порт 465 с secure: true — это SSL сразу, без переговоров. Он
+      работает и у Яндекса, и у Gmail, и у почти всех остальных.
+    */
     const mail = nodemailer.createTransport({
-      host: 'smtp.yandex.ru',
-      port: 465,
+      host: process.env.SMTP_HOST || 'smtp.yandex.ru',
+      port: Number(process.env.SMTP_PORT) || 465,
       secure: true,
       auth: { user, pass },
     })
