@@ -1,11 +1,12 @@
 import { useRef } from 'react'
 import type { CSSProperties } from 'react'
-import { AGENCY_FACTS, PROCESS } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { useAnimate } from '@/motion/useAnimate'
 import { useInView } from '@/motion/useInView'
 import { useReveal } from '@/motion/useReveal'
 
 export function Process() {
+  const { FACTS, PROCESS } = useContent()
   const section = useRef<HTMLElement>(null)
   const title = useRef<HTMLHeadingElement>(null)
   const active = useInView(section)
@@ -45,7 +46,7 @@ export function Process() {
       </div>
 
       <div className="fact-row">
-        {AGENCY_FACTS.map((f, i) => (
+        {FACTS.map((f, i) => (
           <div
             key={f.label}
             className="fact"

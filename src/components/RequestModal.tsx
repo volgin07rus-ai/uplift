@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { CONTACT } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { RequestCtx } from './request'
 import { RequestForm } from './RequestForm'
 
@@ -15,6 +15,7 @@ import { RequestForm } from './RequestForm'
  * проверкам и полям между двумя копиями нельзя.
  */
 export function RequestModal({ children }: { children: ReactNode }) {
+  const { CONTACT, UI } = useContent()
   const [open, setOpen] = useState(false)
   const panel = useRef<HTMLDivElement>(null)
   /** Куда вернуть фокус, когда окно закроется. */
@@ -76,7 +77,7 @@ export function RequestModal({ children }: { children: ReactNode }) {
             aria-modal="true"
             aria-labelledby="modal-title"
           >
-            <button type="button" className="modal-close" onClick={hide} aria-label="Закрыть">
+            <button type="button" className="modal-close" onClick={hide} aria-label={UI.close}>
               <X size={18} />
             </button>
 

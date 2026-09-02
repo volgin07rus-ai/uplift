@@ -3545,7 +3545,144 @@
 				el.classList.add('roll-trigger');
 			}
 
+			/* ── Язык ───────────────────────────────────────────────────────
+
+			   Словарь по самому русскому тексту, а не по ключам, расставленным
+			   в разметке. Так перевод не требует трогать ни один тег, а
+			   пропущенная строка сразу заметна: она просто остаётся русской.
+
+			   Узлы собираем до переката букв. Перекат заменяет текстовый узел
+			   набором пролётов, и после него подменять было бы уже нечего.
+			   Поэтому у элементов с перекатом держим не узел, а сам элемент:
+			   перед сменой языка разбираем его обратно и собираем заново. */
+
+			var EN = {
+				"Холодная сторона": "The cold side",
+				"UPLIFT — тёплая сторона": "UPLIFT — the warm side",
+				"Вечера": "Evenings",
+				"Что меняется": "What changes",
+				"Заявка": "Enquiry",
+				"Обсудить проект": "Start a project",
+				"Меню": "Menu",
+				"Закрыть": "Close",
+				"Обсудить": "Start a",
+				"проект": "project",
+				"Обратная сторона расчёта": "The other side of the numbers",
+				"Полный": "A full",
+				"зал": "house",
+				"У кого-то это зал, у кого-то расписание мастеров или календарь броней. Общее одно: свободных мест не осталось": "For some it is a hall, for others a stylists’ schedule or a booking calendar. One thing is shared: there are no free places left",
+				"Листайте": "Scroll",
+				"О чём эта сторона": "What this side is about",
+				"Про результат принято говорить цифрами. Но выглядит он иначе — как": "Results are usually spoken of in numbers. But they look like something else — like an",
+				"вечер": "evening",
+				", в который администратор перестаёт обзванивать базу, потому что заявок и так больше, чем свободных окон": " when the front desk stops calling the database, because there are already more enquiries than free slots",
+				"Три вечера": "Three evenings",
+				"Вторник, 19:40": "Tuesday, 19:40",
+				"Свободных дорожек нет. Весной в это время работали две из шести, и это считалось нормальным вторником": "Not a single lane free. In spring, two of six were busy at this hour, and that counted as a normal Tuesday",
+				"Утро понедельника": "Monday morning",
+				"Администратор не звонит по базе. Он разбирает то, что пришло за выходные, и часть переносит на следующую неделю": "The front desk is not cold-calling. They are working through what came in over the weekend, and moving part of it to next week",
+				"Конец месяца": "End of the month",
+				"Запись закрыта на три недели вперёд. Вопрос сместился с «где брать клиентов» на «кого ставить в смену»": "Bookings are closed three weeks ahead. The question moved from “where do we find clients” to “who do we put on shift”",
+				"Что перестаёт происходить": "What stops happening",
+				"Обзвон": "Cold calls",
+				"по холодной базе": "through an old database",
+				"Скидки": "Discounts",
+				"чтобы закрыть пустой вторник": "to fill an empty Tuesday",
+				"Простой": "Idle time",
+				"мастеров в середине дня": "for staff in the middle of the day",
+				"Вопрос": "The question",
+				"где взять ещё клиентов": "of where to find more clients",
+				"«У нас перестал стоять вопрос, где брать людей. Теперь стоит другой — успеваем ли мы их принять»": "“We stopped asking where to find people. Now we ask whether we can take them all”",
+				"— владелец сети клубов, второй год работы": "— owner of a club chain, second year of work",
+				"Чтобы так": "To make it",
+				"стало у": "this way for",
+				"вас": "you",
+				"Дальше начинается скучное: ниша, спрос, ставки и стоимость заявки. Это на другой стороне": "What follows is the boring part: niche, demand, bids and cost per lead. That lives on the other side",
+				"Оставить заявку →": "Leave an enquiry →",
+				"Перформанс-маркетинг для растущего бизнеса": "Performance marketing for growing businesses",
+				"Разделы": "Sections",
+				"Кейсы": "Cases",
+				"Как работаем": "How we work",
+				"Обратная сторона": "The other side",
+				"Связь": "Contact",
+				"Оставить заявку": "Leave an enquiry",
+				"Другая сторона": "The other side",
+				"Вернуться на холодную сторону": "Back to the cold side",
+				"Политика конфиденциальности": "Privacy policy",
+			};
+
+			var TITLE = document.title;
+			var textNodes = [];
+			(function walk(node) {
+				for (var i = 0; i < node.childNodes.length; i++) {
+					var n = node.childNodes[i];
+					if (n.nodeType === 3) {
+						if (n.nodeValue.trim()) textNodes.push({ node: n, ru: n.nodeValue });
+					} else if (n.nodeType === 1 && n.tagName !== "SCRIPT" && n.tagName !== "STYLE") {
+						walk(n);
+					}
+				}
+			})(document.body);
+
+			var rollTargets = [];
+			Array.prototype.forEach.call(document.querySelectorAll(SELECTORS), function (el) {
+				var t = firstText(el);
+				if (t) rollTargets.push({ el: el, ru: t.nodeValue });
+			});
+
 			Array.prototype.forEach.call(document.querySelectorAll(SELECTORS), rollify);
+
+			function translate(ru, lang) {
+				var key = ru.trim();
+				if (lang !== "en" || !EN[key]) return ru;
+				// Меняем сам текст, пробелы вокруг оставляем как были
+				return ru.replace(key, EN[key]);
+			}
+
+			function applyLang(lang) {
+				textNodes.forEach(function (t) {
+					// Узлы под перекатом вынуты из дерева — их чинит цикл ниже
+					if (t.node.isConnected) t.node.nodeValue = translate(t.ru, lang);
+				});
+
+				rollTargets.forEach(function (r) {
+					var roll = r.el.querySelector(".uh-roll");
+					var parent = roll ? roll.parentNode : r.el;
+					// Ставим текст ровно туда, где стоял перекат, а не в начало
+					var after = roll ? roll.nextSibling : parent.firstChild;
+					if (roll) parent.removeChild(roll);
+					r.el.classList.remove("roll-trigger");
+					r.el.removeAttribute("aria-label");
+					parent.insertBefore(document.createTextNode(translate(r.ru, lang)), after);
+					rollify(r.el);
+				});
+
+				document.documentElement.lang = lang;
+				// Заголовок вкладки живёт вне тела — переводим отдельно
+				document.title = translate(TITLE, lang);
+			}
+
+			/*
+			  Язык берём там же, где его пишет холодная сторона: страницы живут
+			  на одном домене, значит и хранилище общее. Кадр поднимается
+			  заранее, задолго до перехода, — к моменту показа язык уже нужный.
+			*/
+			var lang = "ru";
+			try {
+				var saved = localStorage.getItem("uplift:lang");
+				lang = saved === "en" || saved === "ru"
+					? saved
+					: (navigator.language || "").toLowerCase().indexOf("ru") === 0 ? "ru" : "en";
+			} catch (e) {
+				// Приватный режим: хранилище закрыто. Остаёмся на русском
+			}
+			if (lang === "en") applyLang(lang);
+
+			window.addEventListener("message", function (e) {
+				if (e.origin !== window.location.origin) return;
+				var d = e.data;
+				if (d && d.type === "uplift:lang") applyLang(d.lang === "en" ? "en" : "ru");
+			});
 		})();
 
 		/*

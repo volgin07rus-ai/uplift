@@ -1278,3 +1278,143 @@ button.footer-link {
     font-size: 0.75rem;
   }
 }
+
+/* ================================================================
+   Переключатель языка
+   ================================================================ */
+
+.lang-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 2.4rem;
+  padding: 0.25rem;
+  border-radius: 6.25em;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 34px -22px rgba(8, 16, 26, 0.7);
+}
+
+/*
+  Переезжает подложка, а не подсветка каждой половины по очереди: глаз
+  читает один переезд как движение, а два вспыхивания — как мигание.
+*/
+.lang-switch-thumb {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc(50% - 0.25rem);
+  border-radius: 999px;
+  background: var(--ink);
+  transition: transform 0.5s var(--ease);
+}
+
+.lang-switch-thumb[data-lang='en'] {
+  transform: translateX(100%);
+}
+
+.lang-switch-btn {
+  position: relative;
+  /* Над подложкой, иначе она закрасит подпись */
+  z-index: 1;
+  min-width: 2.5rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: color 0.4s var(--ease-ui);
+}
+
+.lang-switch-btn[data-active] {
+  color: #fff;
+}
+
+/* Внизу страницы фон почти чёрный — меняем местами светлое и тёмное */
+.site-header[data-theme='dark'] .lang-switch {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.site-header[data-theme='dark'] .lang-switch-thumb {
+  background: #eef2ea;
+}
+
+.site-header[data-theme='dark'] .lang-switch-btn {
+  color: #eef2ea;
+}
+
+.site-header[data-theme='dark'] .lang-switch-btn[data-active] {
+  color: #0c1a28;
+}
+
+/* ================================================================
+   Подмена текста при смене языка
+   ================================================================
+
+   Мгновенная подмена читается как сбой: строки разной длины дёргают
+   раскладку, и глаз ловит рывок, а не смысл. Поэтому текст сначала
+   уходит, и только за закрытыми глазами меняется язык.
+
+   Гасим только прозрачность и ничего больше. Соблазн добавить сдвиг
+   или размытие велик, но сдвиг затёр бы transform, которым блоки
+   выезжают при появлении, а размытие целого поддерева пересчитывается
+   каждый кадр — мы весь день боролись ровно с такой ценой.
+
+   Уход короче возвращения: исчезает быстро, проявляется медленно —
+   иначе подмена выглядит суетливой. */
+
+:root[data-lang-swap] .side--cold :is(h1, h2, h3, p, a, button, label, li, span) {
+  transition: opacity 0.22s var(--ease-ui);
+}
+
+:root[data-lang-swap='out'] .side--cold :is(h1, h2, h3, p, a, button, label, li, span) {
+  opacity: 0;
+}
+
+:root[data-lang-swap='in'] .side--cold :is(h1, h2, h3, p, a, button, label, li, span) {
+  transition-duration: 0.42s;
+}
+
+/*
+  Сам переключатель не мигает: по нему только что нажали, он должен
+  остаться на месте и показать, что выбор принят.
+
+  Переходы возвращаем поимённо. Правило выше задаёт «transition: opacity»
+  сокращённой записью, а она стирает всё остальное — вместе с переездом
+  подложки и сменой цвета подписи. Подложка после этого не доезжала.
+*/
+:root[data-lang-swap] .lang-switch,
+:root[data-lang-swap] .lang-switch :is(button, span) {
+  opacity: 1;
+}
+
+:root[data-lang-swap] .lang-switch-thumb {
+  transition: transform 0.5s var(--ease);
+}
+
+:root[data-lang-swap] .lang-switch-btn {
+  transition: color 0.4s var(--ease-ui);
+}
+
+/*
+  Подпись автора в подвале. Тише всего остального: она для того, кто
+  специально ищет, кем сделан сайт.
+*/
+.footer-credit {
+  font-size: 0.8rem;
+  color: #cfdcea59;
+  transition: color 0.3s var(--ease-ui);
+}
+
+.footer-credit span {
+  color: #cfdcea99;
+}
+
+.footer-credit:hover,
+.footer-credit:hover span {
+  color: #9dc4f0;
+}

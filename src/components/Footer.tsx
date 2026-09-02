@@ -1,11 +1,12 @@
 import type { MouseEvent } from 'react'
-import { AGENCY, BRIDGE, NAV_LINKS_FOOTER } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { useSide } from '@/transition/side'
 import { useRequest } from './request'
 import { Logo } from './Logo'
 import { RollText } from './RollText'
 
 export function Footer() {
+  const { AGENCY, BRIDGE, NAV_FOOTER, UI } = useContent()
   const year = new Date().getFullYear()
   const { go, prefetch } = useSide()
   const openRequest = useRequest()
@@ -29,8 +30,8 @@ export function Footer() {
 
       <div className="footer-cols">
         <div className="footer-col">
-          <span className="footer-col-title">Разделы</span>
-          {NAV_LINKS_FOOTER.map((link) => (
+          <span className="footer-col-title">{UI.sections}</span>
+          {NAV_FOOTER.map((link) => (
             <a key={link.label} href={link.href} className="footer-link roll-trigger">
               <RollText>{link.label}</RollText>
             </a>
@@ -38,18 +39,18 @@ export function Footer() {
         </div>
 
         <div className="footer-col">
-          <span className="footer-col-title">Связь</span>
+          <span className="footer-col-title">{UI.contactCol}</span>
           <a href={`mailto:${AGENCY.email}`} className="footer-link roll-trigger">
             <RollText>{AGENCY.email}</RollText>
           </a>
           {/* Не якорь вниз, а то же окно, что и в шапке */}
           <button type="button" onClick={openRequest} className="footer-link roll-trigger">
-            <RollText>Оставить заявку</RollText>
+            <RollText>{UI.leaveRequest}</RollText>
           </button>
         </div>
 
         <div className="footer-col">
-          <span className="footer-col-title">Другая сторона</span>
+          <span className="footer-col-title">{UI.otherSide}</span>
           <a
             href={BRIDGE.href}
             className="footer-link roll-trigger"
@@ -65,7 +66,21 @@ export function Footer() {
       <div className="footer-bottom">
         <span>© {year} {AGENCY.name}</span>
         <a href="#" className="footer-link roll-trigger">
-          <RollText>Политика конфиденциальности</RollText>
+          <RollText>{UI.privacy}</RollText>
+        </a>
+        {/*
+          Подпись автора. Нарочно тише всего остального в подвале: она
+          нужна тому, кто специально ищет, кем сделан сайт, и не должна
+          спорить с самим сайтом. Имя домена чуть светлее слова перед
+          ним — читается как ссылка, не крича об этом.
+        */}
+        <a
+          className="footer-credit"
+          href="https://volgin.site"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {UI.credit} <span>volgin.site</span>
         </a>
       </div>
     </footer>

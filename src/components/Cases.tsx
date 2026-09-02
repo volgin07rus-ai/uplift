@@ -1,7 +1,8 @@
 import { Fragment, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowUpRight } from 'lucide-react'
-import { CASES, CASES_NOTE, type CaseItem } from '@/content'
+import type { CaseItem } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { useAnimate } from '@/motion/useAnimate'
 import { useInView } from '@/motion/useInView'
 import { useReveal } from '@/motion/useReveal'
@@ -140,6 +141,7 @@ function CaseCard({ item, index, active, wide }: CardProps) {
 }
 
 export function Cases() {
+  const { CASES, CASES_NOTE, UI } = useContent()
   const section = useRef<HTMLElement>(null)
   const title = useRef<HTMLHeadingElement>(null)
   const note = useRef<HTMLParagraphElement>(null)
@@ -188,7 +190,7 @@ export function Cases() {
 
       <div className="case-all">
         <button type="button" onClick={openRequest} className="pill roll-trigger">
-          Обсудить свой проект
+          {UI.ownProject}
           <span className="pill-arrow">
             <ArrowUpRight size={16} />
           </span>

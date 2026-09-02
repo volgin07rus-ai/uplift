@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { LoadState } from '@/useVideoScrub'
-import { AGENCY } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { Logo } from './Logo'
 
 /*
@@ -25,6 +25,7 @@ interface LoaderProps {
 }
 
 export function Loader({ state, timeout = 15000 }: LoaderProps) {
+  const { AGENCY, UI } = useContent()
   const [gone, setGone] = useState(false)
   const [forced, setForced] = useState(false)
 
@@ -83,9 +84,9 @@ export function Loader({ state, timeout = 15000 }: LoaderProps) {
 
         <div className="loader-meta">
           <span>
-            {state.phase === 'download' && !done && 'Загружаем горы'}
-            {state.phase === 'decode' && !done && 'Раскладываем кадры'}
-            {done && 'Готово'}
+            {state.phase === 'download' && !done && UI.loader[0]}
+            {state.phase === 'decode' && !done && UI.loader[1]}
+            {done && UI.loader[2]}
           </span>
           <span className="loader-percent">{percent}%</span>
         </div>

@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { CONTACT } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { useAnimate } from '@/motion/useAnimate'
 import { useInView } from '@/motion/useInView'
 import { useReveal } from '@/motion/useReveal'
@@ -14,6 +14,7 @@ import { RequestForm } from './RequestForm'
  * и три шага о том, что будет после отправки.
  */
 export function Contact() {
+  const { CONTACT } = useContent()
   const section = useRef<HTMLElement>(null)
   const title = useRef<HTMLHeadingElement>(null)
   const label = useRef<HTMLSpanElement>(null)

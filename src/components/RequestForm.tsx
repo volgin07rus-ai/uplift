@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ArrowRight, Check, Send } from 'lucide-react'
-import { CONTACT } from '@/content'
+import { useContent } from '@/i18n/lang'
+import type { Bundle } from '@/i18n/dict'
 import { formConfigured, REQUEST_ENDPOINT, telegramLink } from '@/integrations'
 
 /** Через сколько уводить в бота после успешной отправки, мс. */
@@ -36,12 +37,17 @@ function contactLooksValid(value: string) {
   return (v.match(/\d/g) || []).length >= 10
 }
 
-function validate(f: Fields) {
+/*
+  Тексты ошибок приходят снаружи: проверка живёт вне компонента, а
+  язык — внутри. Передать словарь дешевле, чем тащить сюда хук и
+  делать функцию частью дерева React.
+*/
+function validate(f: Fields, ui: Bundle['UI']) {
   const errors: Partial<Record<keyof Fields, string>> = {}
-  if (f.name.trim().length < 2) errors.name = 'Как к вам обращаться?'
-  if (!f.contact.trim()) errors.contact = 'Без контакта мы не ответим'
-  else if (!contactLooksValid(f.contact)) errors.contact = 'Телефон, @телеграм или почта'
-  if (!f.consent) errors.consent = 'Нужно согласие'
+  if (f.name.trim().length < 2) errors.name = ui.errName
+  if (!f.contact.trim()) errors.contact = ui.errContact
+  else if (!contactLooksValid(f.contact)) errors.contact = ui.errContactBad
+  if (!f.consent) errors.consent = ui.errConsent
   return errors
 }
 
@@ -61,6 +67,7 @@ interface RequestFormProps {
  * открывается из шапки: расходиться проверкам и полям тут нельзя.
  */
 export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFormProps) {
+  const { CONTACT, UI } = useContent()
   const [fields, setFields] = useState<Fields>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({})
   const [status, setStatus] = useState<Status>('idle')
@@ -75,7 +82,7 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const found = validate(fields)
+    const found = validate(fields, UI)
     setErrors(found)
     if (Object.keys(found).length > 0) {
       // Уводим фокус на первое незаполненное поле
@@ -141,9 +148,9 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
           <>
             <a className="contact-done-bot" href={bot}>
               <Send size={16} />
-              Перейти в телеграм-бот
+              {UI.botCta}
             </a>
-            <span className="contact-done-note">Откроем его сами через пару секунд</span>
+            <span className="contact-done-note">{UI.botNote}</span>
           </>
         )}
       </div>
@@ -171,7 +178,7 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
             aria-invalid={!!errors.name}
             aria-describedby={errors.name ? id('err-name') : undefined}
           />
-          <label htmlFor={id('name')}>Имя</label>
+          <label htmlFor={id('name')}>{UI.fieldName}</label>
           <span className="field-line" aria-hidden />
         </div>
         {errors.name && (
@@ -193,7 +200,7 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
             aria-invalid={!!errors.contact}
             aria-describedby={errors.contact ? id('err-contact') : undefined}
           />
-          <label htmlFor={id('contact')}>Телефон, телеграм или почта</label>
+          <label htmlFor={id('contact')}>{UI.fieldContact}</label>
           <span className="field-line" aria-hidden />
         </div>
         {errors.contact && (
@@ -212,7 +219,7 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
             value={fields.project}
             onChange={(e) => set('project', e.target.value)}
           />
-          <label htmlFor={id('project')}>Сайт или ниша</label>
+          <label htmlFor={id('project')}>{UI.fieldProject}</label>
           <span className="field-line" aria-hidden />
         </div>
       </div>
@@ -228,7 +235,7 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
         aria-labelledby={id('budget-label')}
       >
         <span className="budget-label" id={id('budget-label')}>
-          Бюджет в месяц
+          {UI.fieldBudget}
         </span>
         <div className="chips">
           {CONTACT.budgets.map((b) => (
@@ -258,7 +265,7 @@ export function RequestForm({ idPrefix = 'field', autoFocus = false }: RequestFo
             value={fields.task}
             onChange={(e) => set('task', e.target.value)}
           />
-          <label htmlFor={id('task')}>Задача</label>
+          <label htmlFor={id('task')}>{UI.fieldTask}</label>
           <span className="field-line" aria-hidden />
         </div>
       </div>

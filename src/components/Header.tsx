@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { BRAND, EASE, NAV_LINKS } from '@/config'
+import { BRAND, EASE } from '@/config'
+import { useContent } from '@/i18n/lang'
+import { LangSwitch } from './LangSwitch'
 import { useRequest } from './request'
 import { Logo } from './Logo'
 import { RollText } from './RollText'
@@ -36,6 +38,7 @@ const PILL_AT = 0.55
  * тот случай, когда анимация начинает спотыкаться.
  */
 export function Header() {
+  const { NAV, UI } = useContent()
   const root = useRef<HTMLElement>(null)
   const openRequest = useRequest()
   const [ready, setReady] = useState(false)
@@ -102,7 +105,7 @@ export function Header() {
       data-theme="light"
     >
       <div className="header-pill header-nav pointer-events-auto hidden items-center gap-8 lg:flex xl:gap-10">
-        {NAV_LINKS.map((link, i) => (
+        {NAV.map((link, i) => (
           <a
             key={link.label}
             href={link.href}
@@ -135,7 +138,7 @@ export function Header() {
         style={entrance(100)}
       >
         <Logo />
-        <RollText>{NAV_LINKS[0].label}</RollText>
+        <RollText>{NAV[0].label}</RollText>
       </a>
 
       <div className="pointer-events-auto flex items-start gap-4 sm:gap-6" style={entrance(500)}>
@@ -146,7 +149,7 @@ export function Header() {
           onClick={openRequest}
           className="header-pill roll-trigger hidden items-center gap-2.5 text-xs font-medium uppercase tracking-[0.2em] sm:flex"
         >
-          <RollText>Обсудить проект</RollText>
+          <RollText>{UI.discuss}</RollText>
           <span
             className="talk-dot flex h-5 w-5 items-center justify-center rounded-full"
             style={{ backgroundColor: BRAND }}
@@ -154,6 +157,9 @@ export function Header() {
             <ArrowRight size={10} color="#ffffff" />
           </span>
         </button>
+
+        {/* Язык рядом с меню: оба — переключатели, им место вместе */}
+        <LangSwitch />
 
         <Menu />
       </div>

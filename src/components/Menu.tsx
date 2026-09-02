@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
-import { BRAND, CONTACT_EMAIL, INK, NAV_LINKS } from '@/config'
+import { BRAND, CONTACT_EMAIL, INK } from '@/config'
+import { useContent } from '@/i18n/lang'
 import { RollText } from './RollText'
 
 /**
@@ -20,6 +21,7 @@ function delays(i: number, total: number): CSSProperties {
 }
 
 export function Menu() {
+  const { NAV, UI } = useContent()
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -47,7 +49,7 @@ export function Menu() {
       <button
         type="button"
         aria-expanded={open}
-        aria-label={open ? 'Закрыть меню' : 'Открыть меню'}
+        aria-label={open ? UI.closeMenu : UI.openMenu}
         onClick={() => setOpen((v) => !v)}
         className="menu-btn"
         data-open={open ? '1' : undefined}
@@ -55,8 +57,8 @@ export function Menu() {
         <span className="menu-btn-inner">
           {/* Две подписи в маске: одна уходит вверх, вторая приходит снизу */}
           <span className="menu-btn-labels">
-            <span className="menu-btn-label">Меню</span>
-            <span className="menu-btn-label menu-btn-label--close">Закрыть</span>
+            <span className="menu-btn-label">{UI.menu}</span>
+            <span className="menu-btn-label menu-btn-label--close">{UI.close}</span>
           </span>
           <span className="menu-btn-dots">
             <i />
@@ -69,7 +71,7 @@ export function Menu() {
       <div className="menu-panels" data-open={open ? '1' : undefined}>
         {/* 1. Разделы */}
         <nav className="menu-panel menu-panel--links" style={delays(0, total)}>
-          {NAV_LINKS.map((link, i) => (
+          {NAV.map((link, i) => (
             <a
               key={link.label}
               href={link.href}
@@ -86,9 +88,9 @@ export function Menu() {
         {/* 2. Контакт */}
         <div className="menu-panel menu-panel--contact" style={delays(1, total)}>
           <p className="menu-contact-title">
-            Обсудить
+            {UI.discussLines[0]}
             <br />
-            проект
+            {UI.discussLines[1]}
           </p>
           <a href={`mailto:${CONTACT_EMAIL}`} className="menu-contact-mail roll-trigger">
             <RollText>{CONTACT_EMAIL}</RollText>
@@ -105,7 +107,7 @@ export function Menu() {
           className="menu-panel menu-panel--accent roll-trigger"
           style={{ ...delays(2, total), backgroundColor: INK }}
         >
-          <RollText>Смотреть кейсы</RollText>
+          <RollText>{UI.seeCases}</RollText>
           <ArrowUpRight size={20} />
         </a>
       </div>

@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useVideoScrub } from "@/useVideoScrub";
 import { INK, VIDEO_SRC } from "@/config";
-import { AGENCY, GUARANTEE } from "@/content";
+import { useContent } from "@/i18n/lang";
 import { useReveal } from "@/motion/useReveal";
 import { useScramble } from "@/motion/useScramble";
 import { useAnimate, useIsMobile } from "@/motion/useAnimate";
@@ -81,6 +81,7 @@ const SNOW_DPR = Math.min(
 );
 
 export function ColdSide() {
+  const { AGENCY, GUARANTEE } = useContent();
   const s1 = useRef<HTMLElement>(null);
   const s2 = useRef<HTMLElement>(null);
   const h1 = useRef<HTMLHeadingElement>(null);

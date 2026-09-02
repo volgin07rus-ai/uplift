@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { BRIDGE } from '@/content'
+import { useContent } from '@/i18n/lang'
 import { useAnimate } from '@/motion/useAnimate'
 import { useInView, useInViewFlag } from '@/motion/useInView'
 import { useReveal } from '@/motion/useReveal'
@@ -22,6 +22,7 @@ import { useSide } from '@/transition/side'
  * оборачивается листьями.
  */
 export function Bridge() {
+  const { BRIDGE } = useContent()
   const section = useRef<HTMLElement>(null)
   const title = useRef<HTMLHeadingElement>(null)
   const label = useRef<HTMLSpanElement>(null)
