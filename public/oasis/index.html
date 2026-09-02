@@ -2211,33 +2211,53 @@
 		/** Указателя нет — трава распрямляется. */
 		const releaseAim = () => mouseWorld.value.set(99999, 0, 99999);
 
-		window.addEventListener('mousemove', (e) => aimAt(e.clientX, e.clientY));
-		window.addEventListener('mouseleave', releaseAim);
-
 		/*
 		  Палец.
 
-		  Слушаем именно touch-события, а не pointer. Разница решающая: как
-		  только браузер понимает, что жест — это прокрутка, он шлёт
-		  pointercancel и перестаёт присылать перемещения указателя. А
-		  touchmove продолжает идти всю прокрутку.
+		  Слушаем touch-события, а не pointer: как только браузер понимает,
+		  что жест — прокрутка, он шлёт pointercancel и перестаёт присылать
+		  перемещения указателя. touchmove продолжает идти всю прокрутку, а
+		  листание и есть главный жест на телефоне.
 
-		  Для нас это и есть главный случай. Листание — самый частый жест на
-		  телефоне, и трава должна расступаться под пальцем именно тогда;
-		  иначе на телефоне эффекта не было бы вовсе.
+		  ── Чего здесь намеренно нет ──────────────────────────────────
+
+		  Нет touchcancel. Это была ошибка первой попытки: браузер шлёт его
+		  ровно в тот миг, когда решает, что жест — прокрутка, то есть в
+		  начале любого проведения пальцем. Трава распрямлялась сразу же, и
+		  выходило именно то, что и вышло: на короткое касание отзывается,
+		  на проведение — нет.
+
+		  Нет и touchend. Просили «как курсором» — а курсор мыши, уйдя со
+		  страницы, остаётся там, где был. Значит и трава остаётся примятой
+		  на последнем месте, где её тронули, а не вскакивает, едва палец
+		  оторвался.
+
+		  Слушаем на документе и в фазе перехвата: так событие приходит
+		  раньше, чем кто-нибудь по пути решит его не пропускать.
 
 		  passive: true — обещание не отменять прокрутку. Без него браузер
 		  ждал бы нашего решения на каждом касании и листал с задержкой.
 		*/
+		let touchUsed = false;
 		const aimAtTouch = (e) => {
+			touchUsed = true;
 			const t = e.touches[0];
 			if (t) aimAt(t.clientX, t.clientY);
 		};
-		window.addEventListener('touchstart', aimAtTouch, { passive: true });
-		window.addEventListener('touchmove', aimAtTouch, { passive: true });
-		// Палец убрали — трава распрямляется, как под настоящей рукой
-		window.addEventListener('touchend', releaseAim, { passive: true });
-		window.addEventListener('touchcancel', releaseAim, { passive: true });
+		const touchOpts = { passive: true, capture: true };
+		document.addEventListener('touchstart', aimAtTouch, touchOpts);
+		document.addEventListener('touchmove', aimAtTouch, touchOpts);
+
+		window.addEventListener('mousemove', (e) => aimAt(e.clientX, e.clientY));
+		/*
+		  После касания браузер досылает поддельные события мыши. Среди них
+		  попадается и уход указателя — по нему трава распрямлялась бы
+		  посреди прокрутки. Настоящей мыши на таком устройстве нет, поэтому
+		  после первого касания этот путь закрыт.
+		*/
+		window.addEventListener('mouseleave', () => {
+			if (!touchUsed) releaseAim();
+		});
 
 		let resizeTimeout;
 		window.addEventListener('resize', () => {
