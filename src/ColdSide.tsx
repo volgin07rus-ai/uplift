@@ -69,7 +69,12 @@ function outroOpacity(p: number) {
   внутри Particles, и новая ссылка на каждый рендер пересоздавала бы
   всю сцену.
 */
-const SNOW_COLORS = ["#ffffff", "#e6eefb", "#c7d7ec"];
+/*
+  Было три оттенка со сползанием в серо-голубой. На светлом фоне такой
+  снег читался пылью, а не снегом. Теперь два чистых белых и один едва
+  холодный — тень остаётся только в самых мелких хлопьях.
+*/
+const SNOW_COLORS = ["#ffffff", "#ffffff", "#eaf2ff"];
 const SNOW_DPR = Math.min(
   typeof window === "undefined" ? 1 : window.devicePixelRatio || 1,
   2,
@@ -141,6 +146,33 @@ export function ColdSide() {
     io.observe(el);
     return () => io.disconnect();
   }, [containerRef]);
+
+  /*
+    Возвращаясь с тёплой стороны, на наблюдателя полагаться нельзя.
+
+    Пока эта сторона спрятана, она не занимает места, и наблюдатель
+    честно сообщил «не видно» — снег выключился. Придёт ли уведомление
+    обратно, когда display вернут, зависит от браузера: элемент не
+    двигался и не прокручивался, изменилась только видимость предка.
+    Дожидаться этого нельзя — иначе снег так и не включится.
+
+    Поэтому при возврате считаем сами: пересечение с окном — это
+    сравнение двух прямоугольников, тут нечего наблюдать. Второй заход
+    в следующем кадре: размеры после возврата встают не мгновенно.
+  */
+  useEffect(() => {
+    if (!coldActive) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const check = () => {
+      const r = el.getBoundingClientRect();
+      if (!r.height) return;
+      setHeroVisible(r.bottom > 0 && r.top < window.innerHeight);
+    };
+    check();
+    const id = requestAnimationFrame(check);
+    return () => cancelAnimationFrame(id);
+  }, [coldActive, containerRef]);
 
   /*
     Флаг активности читается из того же data-show, который уже выставляет
@@ -254,7 +286,7 @@ export function ColdSide() {
               <Suspense fallback={null}>
                 <Particles
                   particleColors={SNOW_COLORS}
-                  particleCount={isMobile ? 190 : 420}
+                  particleCount={isMobile ? 260 : 700}
                   particleSpread={14}
                   speed={0.2}
                   fallSpeed={0.2}

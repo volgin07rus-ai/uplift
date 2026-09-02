@@ -107,14 +107,37 @@ const fragment = /* glsl */ `
     vec2 uv = gl_PointCoord.xy;
     float d = length(uv - vec2(0.5));
 
+    /*
+      Мерцание одинаковое по всем трём каналам.
+
+      Здесь стояло sin(uv.yxx + …) — сдвиг фазы у красного, зелёного и
+      синего был разный, и каждое хлопьё уезжало в свой оттенок: бурый,
+      зеленоватый, лиловый. На белом фоне это читалось не снегом, а
+      пылью. Одна общая величина оставляет хлопья нейтральными и
+      меняет только яркость — как настоящий снег, который то ловит
+      свет, то нет.
+    */
+    float shimmer = 0.1 * sin(uTime * 0.6 + vRandom.y * 6.28);
+    vec3 tint = vColor + shimmer;
+
+    /*
+      Цвет отдаём уже умноженным на прозрачность.
+
+      Холст создан с premultipliedAlpha (умолчание ogl), то есть браузер
+      считает, что умножение уже сделано. Раньше шейдер отдавал цвет как
+      есть, и мягкий край хлопья складывался неверно: у крупных, близких
+      к камере частиц середина выходила серой вместо белой. Мелкие точки
+      этим не страдали — у них край занимает почти всю площадь, и разница
+      терялась. Отсюда и было ощущение, что снег грязный.
+    */
     if(uAlphaParticles < 0.5) {
       if(d > 0.5) {
         discard;
       }
-      gl_FragColor = vec4(vColor + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28), vFade);
+      gl_FragColor = vec4(tint * vFade, vFade);
     } else {
-      float circle = smoothstep(0.5, 0.4, d) * 0.8;
-      gl_FragColor = vec4(vColor + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28), circle * vFade);
+      float a = smoothstep(0.5, 0.38, d) * 0.95 * vFade;
+      gl_FragColor = vec4(tint * a, a);
     }
   }
 `
@@ -172,6 +195,16 @@ export default function Particles({
   const mouseRef = useRef({ x: 0, y: 0 })
   const enabledRef = useRef(enabled)
   enabledRef.current = enabled
+
+  /*
+    Пока слой выключен, изменения размера окна проходят мимо: нулевые
+    значения записывать нельзя, а других в это время и нет. Включаясь,
+    просим пересчитать — иначе холст останется с размером, который был
+    верен когда-то давно.
+  */
+  useEffect(() => {
+    if (enabled) window.dispatchEvent(new Event('resize'))
+  }, [enabled])
 
   useEffect(() => {
     const container = containerRef.current
