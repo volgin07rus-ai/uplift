@@ -275,35 +275,44 @@ export function ColdSide() {
             Снег на первом экране. Лежит над кадром, но под текстом,
             и гаснет вместе с первым блоком — прозрачность ему пишет
             onProgress тем же значением, что и секции.
-            При выключенном движении в системе не рисуем вовсе.
+
+            Раньше при включённом «уменьшении движения» снега не было
+            вовсе, и первый экран выглядел пустым — будто что-то не
+            загрузилось. Теперь снег остаётся, но успокаивается: втрое
+            реже, втрое медленнее и без слежения за курсором.
+
+            Так и должно быть. Настройку включают из-за укачивания, а
+            мутит от крупного параллакса, рывков и того, что движется
+            вслед за тобой. Медленно оседающие хлопья к этому не
+            относятся — это фон, а не движение под управлением.
           */}
-          {!reduced && (
-            <div
-              ref={snow}
-              className="pointer-events-none absolute inset-0 z-10"
-              style={{ opacity: 1 }}
-            >
-              <Suspense fallback={null}>
-                <Particles
-                  particleColors={SNOW_COLORS}
-                  particleCount={isMobile ? 260 : 700}
-                  particleSpread={14}
-                  speed={0.2}
-                  fallSpeed={0.2}
-                  particleBaseSize={110}
-                  sizeRandomness={1.1}
-                  cameraDistance={18}
-                  alphaParticles
-                  disableRotation
-                  moveParticlesOnHover
-                  particleHoverFactor={0.9}
-                  hoverSmooth={3}
-                  pixelRatio={SNOW_DPR}
-                  enabled={heroVisible && coldActive}
-                />
-              </Suspense>
-            </div>
-          )}
+          <div
+            ref={snow}
+            className="pointer-events-none absolute inset-0 z-10"
+            style={{ opacity: 1 }}
+          >
+            <Suspense fallback={null}>
+              <Particles
+                particleColors={SNOW_COLORS}
+                particleCount={
+                  reduced ? (isMobile ? 90 : 220) : isMobile ? 260 : 700
+                }
+                particleSpread={14}
+                speed={reduced ? 0.07 : 0.2}
+                fallSpeed={reduced ? 0.07 : 0.2}
+                particleBaseSize={110}
+                sizeRandomness={1.1}
+                cameraDistance={18}
+                alphaParticles
+                disableRotation
+                moveParticlesOnHover={!reduced}
+                particleHoverFactor={0.9}
+                hoverSmooth={3}
+                pixelRatio={SNOW_DPR}
+                enabled={heroVisible && coldActive}
+              />
+            </Suspense>
+          </div>
 
           <div
             className="pointer-events-none absolute inset-0 z-20"
