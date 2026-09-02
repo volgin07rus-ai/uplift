@@ -2197,16 +2197,47 @@
 		const grassPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 		const hitPoint = new THREE.Vector3();
 
-		window.addEventListener('mousemove', (e) => {
-			mouseNDC.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+		/** Куда смотрит указатель на плоскости травы. */
+		const aimAt = (clientX, clientY) => {
+			mouseNDC.set((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
 			raycaster.setFromCamera(mouseNDC, camera);
 			if (raycaster.ray.intersectPlane(grassPlane, hitPoint)) {
 				mouseWorld.value.copy(hitPoint);
 				// Дистанция от камеры до точки под курсором — для автофокуса
 				mouseFocusDist = camera.position.distanceTo(hitPoint);
 			}
-		});
-		window.addEventListener('mouseleave', () => mouseWorld.value.set(99999, 0, 99999));
+		};
+
+		/** Указателя нет — трава распрямляется. */
+		const releaseAim = () => mouseWorld.value.set(99999, 0, 99999);
+
+		window.addEventListener('mousemove', (e) => aimAt(e.clientX, e.clientY));
+		window.addEventListener('mouseleave', releaseAim);
+
+		/*
+		  Палец.
+
+		  Слушаем именно touch-события, а не pointer. Разница решающая: как
+		  только браузер понимает, что жест — это прокрутка, он шлёт
+		  pointercancel и перестаёт присылать перемещения указателя. А
+		  touchmove продолжает идти всю прокрутку.
+
+		  Для нас это и есть главный случай. Листание — самый частый жест на
+		  телефоне, и трава должна расступаться под пальцем именно тогда;
+		  иначе на телефоне эффекта не было бы вовсе.
+
+		  passive: true — обещание не отменять прокрутку. Без него браузер
+		  ждал бы нашего решения на каждом касании и листал с задержкой.
+		*/
+		const aimAtTouch = (e) => {
+			const t = e.touches[0];
+			if (t) aimAt(t.clientX, t.clientY);
+		};
+		window.addEventListener('touchstart', aimAtTouch, { passive: true });
+		window.addEventListener('touchmove', aimAtTouch, { passive: true });
+		// Палец убрали — трава распрямляется, как под настоящей рукой
+		window.addEventListener('touchend', releaseAim, { passive: true });
+		window.addEventListener('touchcancel', releaseAim, { passive: true });
 
 		let resizeTimeout;
 		window.addEventListener('resize', () => {
